@@ -1,14 +1,16 @@
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "header.h"
 #include "parser.h"
 #include "vector.h"
 
-#define PORT 3000
+#define PORT 3003
 
 int main() {
   int tcp_socket = socket(AF_INET, SOCK_STREAM, 0); /* socket syscall */
@@ -28,8 +30,7 @@ int main() {
     perror("TCP LISTEN ERROR");
   }
 
-  for (int i = 0; i < 10000;
-       i++) /* Eventually will be changed to while(true) */ {
+  for (int i = 0; i < 1; i++) /* Eventually will be changed to while(true) */ {
     int client_fd = accept(tcp_socket, NULL, NULL);
     if (client_fd < 0) {
       perror("Accept Error!");
@@ -69,16 +70,27 @@ int main() {
       fflush(stdout);
     }
 
+    struct request_headers headers =
+        *(status.h); // h is a pointer to all the populated headers,
+                     // so I must derefrence it first.
+
+    // Here I must parse the header, and check for insconsistencies.
+    check_request_line(&headers, client_fd);
+    //
+    //
+    //
+    //
     ssize_t write_result = write(client_fd, data, strlen(data));
     if (write_result < 0) {
       perror("Write failed");
     }
 
     printf("Handling %dth request\n", i);
-    int shut = shutdown(client_fd, SHUT_WR);
+    int shut = shutdown(client_fd, SHUT_RDWR);
     fflush(stdout);
     close(client_fd);
   }
+  shutdown(tcp_socket, SHUT_RDWR);
   close(tcp_socket);
 }
 

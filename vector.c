@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "def.h"
 #include <stddef.h>
 
 void push(struct vector *v, void *data) {
@@ -28,6 +29,7 @@ struct vector create_void_vector() {
   v.push = &push;
   v.free_mem = &free_mem;
   v.data = NULL;
+  v.compare_str = NULL;
   return v;
 }
 
@@ -47,6 +49,20 @@ void *push_string(struct vector *v, char *string, size_t size_of_string) {
   }
 }
 
+bool compare_str(struct vector *v, char *string_to_compared_with) {
+  int size_of_string = strlen(string_to_compared_with);
+  if (size_of_string != v->size) {
+    return false;
+  }
+  for (int i = 0; i < size_of_string; i++) {
+    if (string_to_compared_with[i] != *(char *)v->at(v, i)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 struct vector create_string_vector() {
   struct vector void_vector = create_void_vector();
 
@@ -55,6 +71,7 @@ struct vector create_string_vector() {
       sizeof(char); // very very important, ortherwise segfault
   void_vector.at = &at;
   void_vector.push_string = &push_string;
+  void_vector.compare_str = &compare_str;
   // void vector is now a string vector
   return void_vector;
 }

@@ -1,6 +1,7 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,7 @@ struct vector {
   void *(*at)(struct vector *v, size_t index);
   void (*free_mem)(struct vector *v);
   void *(*push_string)(struct vector *v, char *string, size_t string_size);
+  bool (*compare_str)(struct vector *v, char *string_to_compared_with);
 };
 
 struct vector create_void_vector();
