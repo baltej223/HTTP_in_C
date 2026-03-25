@@ -104,16 +104,14 @@ static struct request_headers *build_headers(struct vector *request,
     return NULL;
   }
 
-  struct request_headers *headers =
-      calloc(1, sizeof(struct request_headers));
+  struct request_headers *headers = calloc(1, sizeof(struct request_headers));
   if (headers == NULL) {
     return NULL;
   }
 
   if (total_lines > 1) {
     headers->header_count = total_lines - 1;
-    headers->headers =
-        calloc(headers->header_count, sizeof(struct vector *));
+    headers->headers = calloc(headers->header_count, sizeof(struct vector *));
     if (headers->headers == NULL) {
       free(headers);
       return NULL;
@@ -154,10 +152,10 @@ static struct request_headers *build_headers(struct vector *request,
 }
 
 struct headers_status parse_headers(struct vector *request, int bytes_read) {
-  struct headers_status status = {
-      .more_reads_required = true,
-      .parsed_till_byte = bytes_read > 0 ? (size_t)bytes_read : 0,
-      .h = NULL};
+  struct headers_status status = {.more_reads_required = true,
+                                  .parsed_till_byte =
+                                      bytes_read > 0 ? (size_t)bytes_read : 0,
+                                  .h = NULL};
 
   if (request == NULL || request->at == NULL || request->size == 0) {
     return status;

@@ -6,11 +6,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "def.h"
 #include "header.h"
 #include "parser.h"
+#include "utils.h"
 #include "vector.h"
 
-#define PORT 3003
+#define PORT 3000
 
 int main() {
   int tcp_socket = socket(AF_INET, SOCK_STREAM, 0); /* socket syscall */
@@ -30,7 +32,8 @@ int main() {
     perror("TCP LISTEN ERROR");
   }
 
-  for (int i = 0; i < 1; i++) /* Eventually will be changed to while(true) */ {
+  for (int i = 0; i < 10000000;
+       i++) /* Eventually will be changed to while(true) */ {
     int client_fd = accept(tcp_socket, NULL, NULL);
     if (client_fd < 0) {
       perror("Accept Error!");
@@ -65,19 +68,18 @@ int main() {
       }
     }
 
-    for (int i = 0; i < request.size; i++) {
-      printf("%c", *(char *)request.at(&request, i));
-      fflush(stdout);
-    }
-
     struct request_headers headers =
         *(status.h); // h is a pointer to all the populated headers,
                      // so I must derefrence it first.
 
     // Here I must parse the header, and check for insconsistencies.
-    check_request_line(&headers, client_fd);
-    //
-    //
+
+    REQUEST req = create_empty_request();
+    req.header_count = headers.header_count;
+    req = check_request_line(req, &headers, client_fd);
+
+    // Checking if body exists, and if yes then extracting it.
+
     //
     //
     ssize_t write_result = write(client_fd, data, strlen(data));
@@ -85,7 +87,7 @@ int main() {
       perror("Write failed");
     }
 
-    printf("Handling %dth request\n", i);
+    // printf("Handling %dth request\n", i);
     int shut = shutdown(client_fd, SHUT_RDWR);
     fflush(stdout);
     close(client_fd);
@@ -93,18 +95,3 @@ int main() {
   shutdown(tcp_socket, SHUT_RDWR);
   close(tcp_socket);
 }
-
-/*
-# Note:
-- currenly the data is received by the read functio, but it blocks it, until
-you manually close it, or client closes, untill then it just waits to keep
-reading data, cause TCP is like a `STREAM`
-- Thats why, the request is read, printed, but no response.
-*/
-
-/*
- * let pasring happen at two places, one which divides the parser and headers
- * and the request data.
- *
- *
- * */

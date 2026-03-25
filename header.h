@@ -3,6 +3,7 @@
 #include "def.h"
 #include "parser.h"
 
-struct request check_request_line(struct request_headers *headers,
+struct request check_request_line(struct request req,
+                                  struct request_headers *headers,
                                   int client_fd);
 #endif
