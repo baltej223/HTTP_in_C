@@ -6,7 +6,16 @@
 #include <stdio.h>
 
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
+
+bool header_key_equals(struct header_pair *pair, const char *key) {
+  if (pair == NULL || pair->key == NULL || pair->key->data == NULL ||
+      key == NULL) {
+    return false;
+  }
+  return strcasecmp((char *)pair->key->data, key) == 0;
+}
 
 struct request check_request_line(struct request request_builder,
                                   struct request_headers *headers,
@@ -64,6 +73,7 @@ struct request check_request_line(struct request request_builder,
 
   // Next is to put all the headers in request_builder.headers;
   request_builder.headers = headers->headers;
+  request_builder.header_count = headers->header_count;
 
   // Verification of the first line is done! Lets return
   return request_builder;
@@ -80,9 +90,18 @@ struct request extract_body(struct request req) {
   // Loop over all the headers and find Content-Length header
   bool is_header_present = false;
   for (size_t i = 0; i < req.header_count; i++) {
-    char *header_str = req.headers[i]->data;
-    // if ( strcmp(header_str, "Content-Length" )) {}
-    //
-    // Now compare Content-Length char by char
+    struct header_pair *pair = req.headers[i];
+    if (pair == NULL) {
+      continue;
+    }
+
+    if (header_key_equals(pair, "Content-Length")) {
+      is_header_present = true;
+      // header value is available at pair->value->data
+      // TODO: parse value and populate req.body.
+    }
   }
+
+  (void)is_header_present;
+  return req;
 }

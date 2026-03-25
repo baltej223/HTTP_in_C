@@ -9,6 +9,11 @@
 
 #define REQUEST struct request
 
+struct header_pair {
+  struct vector *key;
+  struct vector *value;
+};
+
 struct body_struct {
   bool body_exists;
   int body_length;
@@ -19,7 +24,7 @@ struct request {
   struct vector *method;
   struct vector *path;
   size_t header_count;
-  struct vector **headers;
+  struct header_pair **headers;
   struct body_struct body;
 };
 

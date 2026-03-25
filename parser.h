@@ -7,7 +7,7 @@
 struct request_headers {
   struct vector *request_line;
   size_t header_count;
-  struct vector **headers;
+  struct header_pair **headers;
 };
 
 struct headers_status {

@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "def.h"
+#include "utils.h"
 #include "vector.h"
 
 #include <stdlib.h>
@@ -78,6 +79,8 @@ static size_t count_header_lines(struct vector *request, size_t header_end) {
   return count;
 }
 
+static void free_header_pair(struct header_pair *pair);
+
 static struct vector *copy_line(struct vector *request, size_t start,
                                 size_t end) {
   struct vector *line = malloc(sizeof(struct vector));
@@ -97,6 +100,90 @@ static struct vector *copy_line(struct vector *request, size_t start,
   return line;
 }
 
+static bool copy_slice_into_vector(struct vector *dest, const char *src,
+                                   size_t len) {
+  if (dest == NULL || src == NULL) {
+    return false;
+  }
+
+  for (size_t i = 0; i < len; i++) {
+    char ch = src[i];
+    dest->push(dest, &ch);
+  }
+
+  char null_terminator = '\0';
+  dest->push(dest, &null_terminator);
+  return true;
+}
+
+static struct header_pair *parse_header_line(struct vector *line) {
+  if (line == NULL || line->data == NULL) {
+    return NULL;
+  }
+
+  struct header_pair *pair = calloc(1, sizeof(struct header_pair));
+  if (pair == NULL) {
+    return NULL;
+  }
+
+  struct vector *key_vec = malloc(sizeof(struct vector));
+  struct vector *value_vec = malloc(sizeof(struct vector));
+  if (key_vec == NULL || value_vec == NULL) {
+    free(key_vec);
+    free(value_vec);
+    free(pair);
+    return NULL;
+  }
+
+  *key_vec = create_string_vector();
+  *value_vec = create_string_vector();
+  pair->key = key_vec;
+  pair->value = value_vec;
+
+  char *raw_line = (char *)line->data;
+  size_t line_len = line->size;
+  if (line_len > 0 && raw_line[line_len - 1] == '\0') {
+    line_len--;
+  }
+
+  size_t colon_index = (size_t)-1;
+  for (size_t i = 0; i < line_len; i++) {
+    if (raw_line[i] == ':') {
+      colon_index = i;
+      break;
+    }
+  }
+
+  const char *key_buffer = raw_line;
+  size_t key_len = colon_index == (size_t)-1 ? line_len : colon_index;
+  size_t key_start = 0;
+  size_t key_end = key_len;
+  trim_whitespace(key_buffer, key_len, &key_start, &key_end);
+
+  const char *value_buffer = colon_index == (size_t)-1
+                                 ? raw_line + line_len
+                                 : raw_line + colon_index + 1;
+  size_t value_len =
+      colon_index == (size_t)-1 ? 0 : line_len - (colon_index + 1);
+  size_t value_start = 0;
+  size_t value_end = value_len;
+  trim_whitespace(value_buffer, value_len, &value_start, &value_end);
+
+  const char *trimmed_key = key_buffer + key_start;
+  size_t trimmed_key_len = key_end > key_start ? key_end - key_start : 0;
+  const char *trimmed_value = value_buffer + value_start;
+  size_t trimmed_value_len =
+      value_end > value_start ? value_end - value_start : 0;
+
+  if (!copy_slice_into_vector(pair->key, trimmed_key, trimmed_key_len) ||
+      !copy_slice_into_vector(pair->value, trimmed_value, trimmed_value_len)) {
+    free_header_pair(pair);
+    return NULL;
+  }
+
+  return pair;
+}
+
 static struct request_headers *build_headers(struct vector *request,
                                              size_t header_end) {
   size_t total_lines = count_header_lines(request, header_end);
@@ -111,7 +198,8 @@ static struct request_headers *build_headers(struct vector *request,
 
   if (total_lines > 1) {
     headers->header_count = total_lines - 1;
-    headers->headers = calloc(headers->header_count, sizeof(struct vector *));
+    headers->headers =
+        calloc(headers->header_count, sizeof(struct header_pair *));
     if (headers->headers == NULL) {
       free(headers);
       return NULL;
@@ -136,7 +224,22 @@ static struct request_headers *build_headers(struct vector *request,
     if (line_number == 0) {
       headers->request_line = line;
     } else if (headers->header_count > 0) {
-      headers->headers[line_number - 1] = line;
+      struct header_pair *pair = parse_header_line(line);
+      if (pair == NULL) {
+        if (line->free_mem != NULL) {
+          line->free_mem(line);
+        }
+        free(line);
+        free_request_headers(headers);
+        return NULL;
+      }
+
+      headers->headers[line_number - 1] = pair;
+
+      if (line->free_mem != NULL) {
+        line->free_mem(line);
+      }
+      free(line);
     }
 
     line_number++;
@@ -184,6 +287,28 @@ struct headers_status parse_headers(struct vector *request, int bytes_read) {
   return status;
 }
 
+static void free_header_pair(struct header_pair *pair) {
+  if (pair == NULL) {
+    return;
+  }
+
+  if (pair->key != NULL) {
+    if (pair->key->free_mem != NULL) {
+      pair->key->free_mem(pair->key);
+    }
+    free(pair->key);
+  }
+
+  if (pair->value != NULL) {
+    if (pair->value->free_mem != NULL) {
+      pair->value->free_mem(pair->value);
+    }
+    free(pair->value);
+  }
+
+  free(pair);
+}
+
 void free_request_headers(struct request_headers *headers) {
   if (headers == NULL) {
     return;
@@ -198,14 +323,7 @@ void free_request_headers(struct request_headers *headers) {
 
   if (headers->headers != NULL) {
     for (size_t i = 0; i < headers->header_count; i++) {
-      if (headers->headers[i] == NULL) {
-        continue;
-      }
-
-      if (headers->headers[i]->free_mem != NULL) {
-        headers->headers[i]->free_mem(headers->headers[i]);
-      }
-      free(headers->headers[i]);
+      free_header_pair(headers->headers[i]);
     }
 
     free(headers->headers);
