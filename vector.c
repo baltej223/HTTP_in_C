@@ -1,6 +1,7 @@
 #include "vector.h"
-#include "def.h"
+// #include "def.h"
 #include <stddef.h>
+#include <string.h>
 
 void push(struct vector *v, void *data) {
   // v is 'this' vector
@@ -62,7 +63,6 @@ bool compare_str(struct vector *v, char *string_to_compared_with) {
   return true;
 }
 
-
 struct vector create_string_vector() {
   struct vector void_vector = create_void_vector();
 
@@ -74,4 +74,22 @@ struct vector create_string_vector() {
   void_vector.compare_str = &compare_str;
   // void vector is now a string vector
   return void_vector;
+}
+
+struct vector create_void_allocated_vector(size_t size) {
+  struct vector v;
+  v.capacity = size;
+  v.size = 0;
+  v.data = malloc(size);
+  v.push = &push;
+  v.free_mem = &free_mem;
+  v.compare_str = NULL;
+  return v;
+}
+
+struct vector buffer_to_vector(void *buffer, int buffer_size) {
+  VECTOR empty_vector = create_void_allocated_vector(buffer_size);
+  memcpy(empty_vector.data, buffer, buffer_size);
+  empty_vector.size = buffer_size;
+  return empty_vector;
 }

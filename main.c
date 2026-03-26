@@ -9,10 +9,11 @@
 #include "def.h"
 #include "header.h"
 #include "parser.h"
+#include "response.h"
 #include "utils.h"
 #include "vector.h"
 
-#define PORT 3000
+#define PORT 3002
 
 int main() {
   int tcp_socket = socket(AF_INET, SOCK_STREAM, 0); /* socket syscall */
@@ -74,18 +75,24 @@ int main() {
 
     // Here I must parse the header, and check for insconsistencies.
 
+    for (int m = 0; m < request.size; m++) {
+      printf("%c", *((char *)request.at(&request, m)));
+    }
+
     REQUEST req = create_empty_request();
     req.header_count = headers.header_count;
     req = check_request_line(req, &headers, client_fd);
 
     // Checking if body exists, and if yes then extracting it.
+    req = extract_body(req, request, status.parsed_till_byte, client_fd);
+    // Next Responce builder
+    //
+    //
 
-    //
-    //
-    ssize_t write_result = write(client_fd, data, strlen(data));
-    if (write_result < 0) {
-      perror("Write failed");
-    }
+    // ssize_t write_result = write(client_fd, data, strlen(data));
+    // if (write_result < 0) {
+    //   perror("Write failed");
+    // }
 
     // printf("Handling %dth request\n", i);
     int shut = shutdown(client_fd, SHUT_RDWR);

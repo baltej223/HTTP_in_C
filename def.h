@@ -8,6 +8,7 @@
 #include <stddef.h>
 
 #define REQUEST struct request
+#define RESPONCE struct responce
 
 struct header_pair {
   struct vector *key;
@@ -26,6 +27,15 @@ struct request {
   size_t header_count;
   struct header_pair **headers;
   struct body_struct body;
+};
+
+struct responce {
+  struct vector *status;
+  struct vector *server;
+  struct vector *date;
+  struct vector *content_length;
+  struct vector *content_type;
+  struct vector *body;
 };
 
 #endif

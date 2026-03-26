@@ -10,4 +10,8 @@ struct request create_empty_request();
 void trim_whitespace(const char *buffer, size_t len, size_t *start_index,
                      size_t *end_index);
 
+struct body_struct create_empty_body_struct();
+struct body_struct create_body_struct_from_vector(VECTOR body);
+void free_body_struct(struct body_struct *body);
+
 #endif

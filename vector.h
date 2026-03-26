@@ -23,5 +23,5 @@ struct vector {
 
 struct vector create_void_vector();
 struct vector create_string_vector();
-
+struct vector buffer_to_vector(void *buffer, int buffer_size);
 #endif

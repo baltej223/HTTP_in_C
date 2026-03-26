@@ -3,8 +3,10 @@
 #include "parser.h"
 #include "utils.h"
 #include "vector.h"
+#include <stddef.h>
 #include <stdio.h>
 
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
@@ -79,7 +81,8 @@ struct request check_request_line(struct request request_builder,
   return request_builder;
 }
 
-struct request extract_body(struct request req) {
+struct request extract_body(struct request req, struct vector rawrequest,
+                            size_t total_bytes_read, int client_fd) {
   // check for header, Content-Length>0 if exits, that means body exists.
   // Then check for Transfer-Encoding: chunked, if it exists that means the body
   // is chuncked, and the program needs to read the the socket till signal is
@@ -88,7 +91,13 @@ struct request extract_body(struct request req) {
   // Transfer-Encoding: chunked can be handled.
 
   // Loop over all the headers and find Content-Length header
+
+  /*
+   * ------- Currently not going for Transfer-Encoding ------------
+   */
   bool is_header_present = false;
+  int content_length = 0;
+  bool is_body_present = false;
   for (size_t i = 0; i < req.header_count; i++) {
     struct header_pair *pair = req.headers[i];
     if (pair == NULL) {
@@ -98,10 +107,28 @@ struct request extract_body(struct request req) {
     if (header_key_equals(pair, "Content-Length")) {
       is_header_present = true;
       // header value is available at pair->value->data
-      // TODO: parse value and populate req.body.
+      content_length = atoi(pair->value->data);
+      break;
     }
   }
+  if (is_header_present && (content_length > 0)) {
+    is_body_present = true;
+  }
 
-  (void)is_header_present;
+  if (!is_body_present) {
+    struct body_struct empty_body = create_empty_body_struct();
+    req.body = empty_body;
+    return req;
+  }
+
+  // Now if the body is present, then to read the next content_length bytes
+  size_t read_till_bytes = total_bytes_read + content_length;
+
+  VECTOR body = create_string_vector();
+  for (int i = total_bytes_read; i < read_till_bytes; i++) {
+    char *to_push = (char *)rawrequest.at(&rawrequest, i);
+    body.push(&body, to_push);
+  }
+  req.body = create_body_struct_from_vector(body);
   return req;
 }
