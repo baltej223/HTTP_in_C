@@ -1,7 +1,6 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -75,10 +74,6 @@ int main() {
 
     // Here I must parse the header, and check for insconsistencies.
 
-    for (int m = 0; m < request.size; m++) {
-      printf("%c", *((char *)request.at(&request, m)));
-    }
-
     REQUEST req = create_empty_request();
     req.header_count = headers.header_count;
     req = check_request_line(req, &headers, client_fd);
@@ -93,10 +88,6 @@ int main() {
     // This is the function which is causing seg fault.
 
     VECTOR response_text = response_to_text(res);
-
-    for (int m = 0; m < response_text.size; m++) {
-      printf("%c", *((char *)response_text.at(&response_text, m)));
-    }
 
     char *response_buffer = vector_to_buffer(response_text);
     ssize_t write_result =
