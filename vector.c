@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <stdio.h>
+
 void push(struct vector *v, void *data) {
   // v is 'this' vector
   if (v->capacity == v->size) {
@@ -44,7 +46,7 @@ void *at(struct vector *v, size_t index) {
   // safely”
 }
 
-void *push_string(struct vector *v, char *string, size_t size_of_string) {
+void push_string(struct vector *v, char *string, size_t size_of_string) {
   for (int i = 0; i < size_of_string; i++) {
     v->push(v, &string[i]);
   }
@@ -76,7 +78,10 @@ struct vector create_string_vector() {
   return void_vector;
 }
 
-struct vector create_void_allocated_vector(size_t size) {
+struct vector create_void_allocated_vector(
+    size_t size) /*problem here, can only be used for strings, cause element
+                    size if set to one*/
+{
   struct vector v;
   v.capacity = size;
   v.size = 0;
@@ -84,6 +89,8 @@ struct vector create_void_allocated_vector(size_t size) {
   v.push = &push;
   v.free_mem = &free_mem;
   v.compare_str = NULL;
+  v.elem_size = 1;
+  v.at = &at;
   return v;
 }
 
@@ -92,4 +99,17 @@ struct vector buffer_to_vector(void *buffer, int buffer_size) {
   memcpy(empty_vector.data, buffer, buffer_size);
   empty_vector.size = buffer_size;
   return empty_vector;
+}
+
+void append_vector_to_vector(struct vector *dest, struct vector *src) {
+  for (size_t i = 0; i < src->size; i++) {
+    char *c = (char *)src->at(src, i);
+    dest->push(dest, c);
+  }
+}
+
+void *vector_to_buffer(struct vector vec) {
+  void *buffer = malloc(vec.size);
+  memcpy(buffer, vec.data, vec.size);
+  return buffer;
 }

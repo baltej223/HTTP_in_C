@@ -8,7 +8,7 @@
 #include <stddef.h>
 
 #define REQUEST struct request
-#define RESPONCE struct responce
+#define RESPONSE struct response
 
 struct header_pair {
   struct vector *key;
@@ -18,6 +18,7 @@ struct header_pair {
 struct body_struct {
   bool body_exists;
   int body_length;
+  struct vector *content_type;
   struct vector *body;
 };
 
@@ -29,13 +30,13 @@ struct request {
   struct body_struct body;
 };
 
-struct responce {
-  struct vector *status;
-  struct vector *server;
-  struct vector *date;
-  struct vector *content_length;
-  struct vector *content_type;
-  struct vector *body;
+struct response {
+  struct vector *status;       // done
+  struct vector *server;       // done
+  struct vector *date;         // done
+  int content_length;          // done
+  struct vector *content_type; // done
+  struct body_struct body;     // done
 };
 
 #endif

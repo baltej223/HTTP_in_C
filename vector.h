@@ -17,11 +17,13 @@ struct vector {
   // void (*at)(struct vector *v, size_t index) = NULL;
   void *(*at)(struct vector *v, size_t index);
   void (*free_mem)(struct vector *v);
-  void *(*push_string)(struct vector *v, char *string, size_t string_size);
+  void (*push_string)(struct vector *v, char *string, size_t string_size);
   bool (*compare_str)(struct vector *v, char *string_to_compared_with);
 };
 
 struct vector create_void_vector();
 struct vector create_string_vector();
 struct vector buffer_to_vector(void *buffer, int buffer_size);
+void *vector_to_buffer(struct vector vec);
+void append_vector_to_vector(struct vector *dest, struct vector *src);
 #endif

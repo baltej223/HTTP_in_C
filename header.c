@@ -77,7 +77,7 @@ struct request check_request_line(struct request request_builder,
   request_builder.headers = headers->headers;
   request_builder.header_count = headers->header_count;
 
-  // Verification of the first line is done! Lets return
+  // Verification and extraction of the first line is done! Lets return
   return request_builder;
 }
 

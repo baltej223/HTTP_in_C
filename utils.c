@@ -68,22 +68,42 @@ void trim_whitespace(const char *buffer, size_t len, size_t *start_index,
 }
 
 struct body_struct create_empty_body_struct() {
-  struct body_struct empty = {false, 0, NULL};
+  struct body_struct empty = {false, 0, NULL, NULL};
   return empty;
 }
 
+// AI Written, thats why it sucks
 struct body_struct create_body_struct_from_vector(VECTOR body) {
-  struct body_struct b = {.body_exists = true};
-  int size = body.size;
-  b.body_length = size;
+  struct body_struct b = {0};
+  b.body_exists = true;
+  b.body_length = body.size;
+  b.content_type = NULL;
 
   struct vector *body_ptr = malloc(sizeof(struct vector));
-  if (body_ptr == NULL) {
+  if (!body_ptr) {
     b.body_exists = false;
     b.body = NULL;
     return b;
   }
+
   *body_ptr = body;
+
+  if (body.data == NULL) {
+    body_ptr->data = NULL;
+    b.body = body_ptr;
+    return b;
+  }
+
+  body_ptr->data = malloc(body.capacity * body.elem_size);
+  if (!body_ptr->data) {
+    free(body_ptr);
+    b.body_exists = false;
+    b.body = NULL;
+    return b;
+  }
+
+  memcpy(body_ptr->data, body.data, body.size * body.elem_size);
+
   b.body = body_ptr;
   return b;
 }
@@ -102,3 +122,21 @@ struct body_struct create_body_struct_from_vector(VECTOR body) {
 //   body->body_exists = false;
 //   body->body_length = 0;
 // }
+//
+
+struct response create_empty_response() {
+  struct body_struct empty = {false, 0, NULL};
+  struct response res = {NULL, NULL, NULL, 0, NULL, empty};
+  return res;
+}
+
+char *int_to_string(int value) {
+  int len = snprintf(NULL, 0, "%d", value);
+  char *str = malloc(len + 1);
+
+  if (!str)
+    return NULL;
+
+  snprintf(str, len + 1, "%d", value);
+  return str;
+}

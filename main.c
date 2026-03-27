@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "vector.h"
 
-#define PORT 3002
+#define PORT 3001
 
 int main() {
   int tcp_socket = socket(AF_INET, SOCK_STREAM, 0); /* socket syscall */
@@ -86,15 +86,39 @@ int main() {
     // Checking if body exists, and if yes then extracting it.
     req = extract_body(req, request, status.parsed_till_byte, client_fd);
     // Next Responce builder
-    //
-    //
 
-    // ssize_t write_result = write(client_fd, data, strlen(data));
-    // if (write_result < 0) {
-    //   perror("Write failed");
-    // }
+    RESPONSE res = generate_response(req); // its going to give response
+                                           // struct and not TEXT response
 
-    // printf("Handling %dth request\n", i);
+    // This is the function which is causing seg fault.
+
+    VECTOR response_text = response_to_text(res);
+
+    for (int m = 0; m < response_text.size; m++) {
+      printf("%c", *((char *)response_text.at(&response_text, m)));
+    }
+
+    char *response_buffer = vector_to_buffer(response_text);
+    ssize_t write_result =
+        write(client_fd, response_buffer, response_text.size);
+    if (write_result < 0) {
+      perror("Write failed");
+    }
+
+    res.status->free_mem(res.status);
+    free(res.status);
+    res.server->free_mem(res.server);
+    free(res.server);
+    res.date->free_mem(res.date);
+    free(res.date);
+    res.content_type->free_mem(res.content_type);
+    free(res.content_type);
+    res.body.body->free_mem(res.body.body);
+    free(res.body.body);
+
+    response_text.free_mem(&response_text);
+    free(response_buffer);
+
     int shut = shutdown(client_fd, SHUT_RDWR);
     fflush(stdout);
     close(client_fd);
