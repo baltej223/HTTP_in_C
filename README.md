@@ -4,6 +4,9 @@
 
 - After I was done with the TCP server, I wanted to grow it even more, and convert it into a HTTP server written in C. It's a fork of the previous TCP server which I made ( [baltej223/TCP_in_C](https://github.com/baltej223/TCP_in_C) )
 
+## Quick Look: 
+![output](https://github.com/user-attachments/assets/ac3a4391-b1a8-4466-9d1a-46beb0c04ec2)
+
 ### Current flow goes as follows
 - First a new fresh `socket` capable of handling IP4 connections is created.
 - Then the socket is bound to an address and port using `bind()`,`INADDR_ANY`and`3000` in this case.
