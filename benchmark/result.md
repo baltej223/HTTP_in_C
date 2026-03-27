@@ -61,7 +61,7 @@ Percentage of the requests served within a certain time (ms)
 # MY SERVER
 
 ```
-
+```
 ░▒▓ ~  ab -n 100000 -c 50 <http://localhost:3000/>                                                                                         ✔  11:05:53 PM ▓▒░
 This is ApacheBench, Version 2.3 <$Revision: 1923142 $>
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, <http://www.zeustech.net/>
@@ -114,8 +114,8 @@ Percentage of the requests served within a certain time (ms)
   95%      3
   98%      3
   99%      4
- 100%      7 (longest request)```
-
+ 100%      7 (longest request)
+```
 # Conclusions
 
 ## Raw data
