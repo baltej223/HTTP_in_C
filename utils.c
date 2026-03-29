@@ -108,22 +108,6 @@ struct body_struct create_body_struct_from_vector(VECTOR body) {
   return b;
 }
 
-// void free_body_struct(struct body_struct *body) {
-//   if (body == NULL) {
-//     return;
-//   }
-//   if (body->body != NULL) {
-//     if (body->body->free_mem != NULL) {
-//       body->body->free_mem(body->body);
-//     }
-//     free(body->body);
-//   }
-//   body->body = NULL;
-//   body->body_exists = false;
-//   body->body_length = 0;
-// }
-//
-
 struct response create_empty_response() {
   struct body_struct empty = {false, 0, NULL};
   struct response res = {NULL, NULL, NULL, 0, NULL, empty};
@@ -139,4 +123,69 @@ char *int_to_string(int value) {
 
   snprintf(str, len + 1, "%d", value);
   return str;
+}
+
+void free_body_struct(struct body_struct *body) {
+  if (body == NULL) {
+    return;
+  }
+  if (body->body != NULL) {
+    if (body->body->free_mem != NULL) {
+      body->body->free_mem(body->body);
+    }
+    free(body->body);
+  }
+  body->body = NULL;
+  body->body_exists = false;
+  body->body_length = 0;
+}
+
+void free_response(struct response *res) {
+  if (res == NULL)
+    return;
+  if (res->status != NULL) {
+    res->status->free_mem(res->status);
+    free(res->status);
+  }
+  if (res->server != NULL) {
+    res->server->free_mem(res->server);
+    free(res->server);
+  }
+  if (res->date != NULL) {
+    res->date->free_mem(res->date);
+    free(res->date);
+  }
+  if (res->content_type != NULL) {
+    res->content_type->free_mem(res->content_type);
+    free(res->content_type);
+  }
+  free_body_struct(&res->body);
+}
+
+void free_request(struct request *req) {
+  if (req == NULL)
+    return;
+  // if (req->method != NULL) {
+  //   req->method->free_mem(req->method);
+  // }
+  // if (req->path != NULL) {
+  //   req->path->free_mem(req->path);
+  // }
+  if (req->headers != NULL) {
+    for (size_t i = 0; i < req->header_count; i++) {
+      if (req->headers[i] != NULL) {
+        if (req->headers[i]->key != NULL) {
+          req->headers[i]->key->free_mem(req->headers[i]->key);
+          free(req->headers[i]->key);
+        }
+        if (req->headers[i]->value != NULL) {
+          req->headers[i]->value->free_mem(req->headers[i]->value);
+          free(req->headers[i]->value);
+        }
+        free(req->headers[i]);
+      }
+    }
+    free(req->headers);
+  }
+  free_body_struct(&req->body);
 }

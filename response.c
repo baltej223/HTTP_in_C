@@ -59,7 +59,7 @@ struct body_struct generate_body(
                            then what to return for this path*/
 {
   VECTOR data = create_string_vector();
-  char *string = "This is the data to be sent back to the client!!!!";
+  char *string = "This is the data to be sent back to the client!";
   int str_len = strlen(string);
   data.push_string(&data, string, str_len);
 

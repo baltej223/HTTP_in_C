@@ -16,5 +16,7 @@ struct body_struct create_body_struct_from_vector(VECTOR body);
 void free_body_struct(struct body_struct *body);
 
 struct response create_empty_response();
+void free_response(struct response *res);
+void free_request(struct request *req);
 char *int_to_string(int value);
 #endif

@@ -4,7 +4,7 @@ C_FILES=main.c parser.c vector.c header.c response.c utils.c
 C_OUTPUT=output
 
 JS_DIR=./benchmark/js
-PORT=3001
+PORT=3000
 
 build:
 	$(CC) $(C_FILES) -o $(C_OUTPUT)

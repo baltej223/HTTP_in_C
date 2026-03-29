@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "vector.h"
 
-#define PORT 3001
+#define PORT 3000
 
 int main() {
   int tcp_socket = socket(AF_INET, SOCK_STREAM, 0); /* socket syscall */
@@ -85,9 +85,11 @@ int main() {
     RESPONSE res = generate_response(req); // its going to give response
                                            // struct and not TEXT response
 
-    // This is the function which is causing seg fault.
-
     VECTOR response_text = response_to_text(res);
+
+    for (int m = 0; m < response_text.size; m++) {
+      printf("%c", *((char *)response_text.at(&response_text, m)));
+    }
 
     char *response_buffer = vector_to_buffer(response_text);
     ssize_t write_result =
@@ -96,17 +98,15 @@ int main() {
       perror("Write failed");
     }
 
-    res.status->free_mem(res.status);
-    free(res.status);
-    res.server->free_mem(res.server);
-    free(res.server);
-    res.date->free_mem(res.date);
-    free(res.date);
-    res.content_type->free_mem(res.content_type);
-    free(res.content_type);
-    res.body.body->free_mem(res.body.body);
-    free(res.body.body);
+    // Freeing raw request buffer
+    request.free_mem(&request);
 
+    // Freeing REQUEST req struct and realated heap memory
+    free_request(&req); // This function is causing segfault
+    // Freeing RESPONSE res struct and realated heap memory
+    free_response(&res);
+
+    // Freeing response_text buffer, which haves response as text
     response_text.free_mem(&response_text);
     free(response_buffer);
 
