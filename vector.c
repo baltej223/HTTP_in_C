@@ -1,25 +1,31 @@
 #include "vector.h"
 // #include "def.h"
+#include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
-#include <stdio.h>
-
 void push(struct vector *v, void *data) {
-  // v is 'this' vector
-  if (v->capacity == v->size) {
-    v->capacity *= 2;
 
-    void *temp = realloc(v->data, v->capacity * v->elem_size);
+  if (v->capacity == v->size) {
+
+    size_t new_capacity = v->capacity * 2;
+
+    void *temp = realloc(v->data, new_capacity * v->elem_size);
+
     if (temp == NULL) {
-      // dangerous here.
-      push(v, data);
-    } else {
-      v->data = temp;
+      fprintf(stderr, "realloc failed\n");
+      exit(1);
     }
+
+    v->data = temp;
+    v->capacity = new_capacity;
   }
+
   memcpy((char *)v->data + (v->size * v->elem_size), data, v->elem_size);
+
   v->size++;
+  assert(v->elem_size > 0);
 }
 
 void free_mem(struct vector *v) {
@@ -32,6 +38,7 @@ struct vector create_void_vector() {
   struct vector v;
   v.capacity = 1;
   v.size = 0;
+  v.elem_size = 1;
   // No v.data defination here.
   v.push = &push;
   v.free_mem = &free_mem;

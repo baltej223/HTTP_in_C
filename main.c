@@ -91,9 +91,6 @@ void *handle_client(void *arg) {
   response_text.free_mem(&response_text);
   free(response_buffer);
 
-  //
-  free_request_headers(headers); // This function is causing segfault
-
   int shut = shutdown(client_fd, SHUT_RDWR);
   fflush(stdout);
   close(client_fd);
