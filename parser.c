@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "vector.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 static char read_char(struct vector *request, size_t index) {
@@ -122,23 +123,13 @@ static struct header_pair *parse_header_line(struct vector *line) {
   }
 
   struct header_pair *pair = calloc(1, sizeof(struct header_pair));
+
   if (pair == NULL) {
     return NULL;
   }
 
-  struct vector *key_vec = malloc(sizeof(struct vector));
-  struct vector *value_vec = malloc(sizeof(struct vector));
-  if (key_vec == NULL || value_vec == NULL) {
-    free(key_vec);
-    free(value_vec);
-    free(pair);
-    return NULL;
-  }
-
-  *key_vec = create_string_vector();
-  *value_vec = create_string_vector();
-  pair->key = key_vec;
-  pair->value = value_vec;
+  pair->key = create_string_vector();
+  pair->value = create_string_vector();
 
   char *raw_line = (char *)line->data;
   size_t line_len = line->size;
@@ -175,8 +166,8 @@ static struct header_pair *parse_header_line(struct vector *line) {
   size_t trimmed_value_len =
       value_end > value_start ? value_end - value_start : 0;
 
-  if (!copy_slice_into_vector(pair->key, trimmed_key, trimmed_key_len) ||
-      !copy_slice_into_vector(pair->value, trimmed_value, trimmed_value_len)) {
+  if (!copy_slice_into_vector(&pair->key, trimmed_key, trimmed_key_len) ||
+      !copy_slice_into_vector(&pair->value, trimmed_value, trimmed_value_len)) {
     free_header_pair(pair);
     return NULL;
   }
@@ -292,19 +283,8 @@ static void free_header_pair(struct header_pair *pair) {
     return;
   }
 
-  if (pair->key != NULL) {
-    if (pair->key->free_mem != NULL) {
-      pair->key->free_mem(pair->key);
-    }
-    free(pair->key);
-  }
-
-  if (pair->value != NULL) {
-    if (pair->value->free_mem != NULL) {
-      pair->value->free_mem(pair->value);
-    }
-    free(pair->value);
-  }
+  pair->key.free_mem(&pair->key);
+  pair->value.free_mem(&pair->value);
 
   free(pair);
 }
@@ -314,20 +294,12 @@ void free_request_headers(struct request_headers *headers) {
     return;
   }
 
-  if (headers->request_line != NULL) {
-    if (headers->request_line->free_mem != NULL) {
-      headers->request_line->free_mem(headers->request_line);
-    }
-    free(headers->request_line);
-  }
+  headers->request_line->free_mem(headers->request_line);
 
   if (headers->headers != NULL) {
+
     for (size_t i = 0; i < headers->header_count; i++) {
       free_header_pair(headers->headers[i]);
     }
-
-    free(headers->headers);
   }
-
-  free(headers);
 }

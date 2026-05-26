@@ -12,11 +12,10 @@
 #include <unistd.h>
 
 bool header_key_equals(struct header_pair *pair, const char *key) {
-  if (pair == NULL || pair->key == NULL || pair->key->data == NULL ||
-      key == NULL) {
+  if (pair == NULL || pair->key.data == NULL || key == NULL) {
     return false;
   }
-  return strcasecmp((char *)pair->key->data, key) == 0;
+  return strcasecmp((char *)pair->key.data, key) == 0;
 }
 
 struct request check_request_line(struct request request_builder,
@@ -107,7 +106,7 @@ struct request extract_body(struct request req, struct vector rawrequest,
     if (header_key_equals(pair, "Content-Length")) {
       is_header_present = true;
       // header value is available at pair->value->data
-      content_length = atoi(pair->value->data);
+      content_length = atoi(pair->value.data);
       break;
     }
   }

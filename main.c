@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -14,6 +15,91 @@
 
 #define PORT 3000
 
+void *handle_client(void *arg) {
+  int *client_fd_ptr = (int *)arg;
+  int client_fd = *client_fd_ptr;
+  free(client_fd_ptr);
+
+  char *data = "Just a TCP server sending some data!";
+
+  // Here, read the request from the client_fd in chunckified way
+  // Since a simple request is not that large, so buffer of 200 will work i
+  // guess.
+  // # Request Reading:
+  const int READ_BUFFER_SIZE = 500;
+  char buffer[READ_BUFFER_SIZE];
+  VECTOR request = create_string_vector();
+
+  ssize_t bytes_read;
+  ssize_t total_bytes_read = 0;
+  struct headers_status status;
+  while ((bytes_read = read(client_fd, buffer, READ_BUFFER_SIZE)) > 0) {
+    total_bytes_read += bytes_read;
+    // I need to define another function which check if the data has ended,
+    // from client side.
+    // then the data will be sent to the parser to get the content-length and
+    // parse headers+body or parse headers only.
+
+    request.push_string(&request, buffer, bytes_read);
+    status = parse_headers(&request, total_bytes_read);
+
+    if (status.more_reads_required == true) {
+      continue;
+    } else {
+      break;
+    }
+  }
+
+  struct request_headers *headers =
+      status.h; // h is a pointer to all the populated headers,
+                // so I must derefrence it first.
+
+  // Here I must parse the header, and check for insconsistencies.
+
+  REQUEST req = create_empty_request();
+  req.header_count = headers->header_count;
+  req = check_request_line(req, headers, client_fd);
+
+  // Checking if body exists, and if yes then extracting it.
+  req = extract_body(req, request, status.parsed_till_byte, client_fd);
+  // Next Responce builder
+
+  RESPONSE res = generate_response(req); // its going to give response
+                                         // struct and not TEXT response
+
+  VECTOR response_text = response_to_text(res);
+
+  for (int m = 0; m < response_text.size; m++) {
+    printf("%c", *((char *)response_text.at(&response_text, m)));
+  }
+
+  char *response_buffer = vector_to_buffer(response_text);
+  ssize_t write_result = write(client_fd, response_buffer, response_text.size);
+  if (write_result < 0) {
+    perror("Write failed");
+  }
+
+  // Freeing raw request buffer
+  request.free_mem(&request);
+
+  // Freeing REQUEST req struct and realated heap memory
+  free_request(&req);
+  // Freeing RESPONSE res struct and realated heap memory
+  free_response(&res);
+
+  // Freeing response_text buffer, which haves response as text
+  response_text.free_mem(&response_text);
+  free(response_buffer);
+
+  //
+  free_request_headers(headers); // This function is causing segfault
+
+  int shut = shutdown(client_fd, SHUT_RDWR);
+  fflush(stdout);
+  close(client_fd);
+  return NULL;
+}
+
 int main() {
   int tcp_socket = socket(AF_INET, SOCK_STREAM, 0); /* socket syscall */
 
@@ -22,6 +108,8 @@ int main() {
   server.sin_port = htons(PORT); // htons means: host to network store
   server.sin_addr.s_addr = INADDR_ANY;
 
+  int opt = 1;
+  setsockopt(tcp_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
   if (!(bind(tcp_socket, (struct sockaddr *)&server, sizeof(server)) ==
         0)) /*bind syscall!*/ {
     // bind not succeeded.
@@ -32,87 +120,19 @@ int main() {
     perror("TCP LISTEN ERROR");
   }
 
-  for (int i = 0; i < 10000000;
-       i++) /* Eventually will be changed to while(true) */ {
+  while (true) /* Eventually will be changed to while(true) */ {
     int client_fd = accept(tcp_socket, NULL, NULL);
     if (client_fd < 0) {
       perror("Accept Error!");
+    } else {
+      // Create a thread Here
+      int *fd_ptr = malloc(sizeof(int));
+      *fd_ptr = client_fd;
+
+      pthread_t client_thread;
+      pthread_create(&client_thread, NULL, handle_client, fd_ptr);
+      pthread_detach(client_thread);
     }
-    char *data = "Just a TCP server sending some data!";
-
-    // Here, read the request from the client_fd in chunckified way
-    // Since a simple request is not that large, so buffer of 200 will work i
-    // guess.
-    // # Request Reading:
-    const int READ_BUFFER_SIZE = 500;
-    char buffer[READ_BUFFER_SIZE];
-    VECTOR request = create_string_vector();
-
-    ssize_t bytes_read;
-    ssize_t total_bytes_read = 0;
-    struct headers_status status;
-    while ((bytes_read = read(client_fd, buffer, READ_BUFFER_SIZE)) > 0) {
-      total_bytes_read += bytes_read;
-      // I need to define another function which check if the data has ended,
-      // from client side.
-      // then the data will be sent to the parser to get the content-length and
-      // parse headers+body or parse headers only.
-
-      request.push_string(&request, buffer, bytes_read);
-      status = parse_headers(&request, total_bytes_read);
-
-      if (status.more_reads_required == true) {
-        continue;
-      } else {
-        break;
-      }
-    }
-
-    struct request_headers headers =
-        *(status.h); // h is a pointer to all the populated headers,
-                     // so I must derefrence it first.
-
-    // Here I must parse the header, and check for insconsistencies.
-
-    REQUEST req = create_empty_request();
-    req.header_count = headers.header_count;
-    req = check_request_line(req, &headers, client_fd);
-
-    // Checking if body exists, and if yes then extracting it.
-    req = extract_body(req, request, status.parsed_till_byte, client_fd);
-    // Next Responce builder
-
-    RESPONSE res = generate_response(req); // its going to give response
-                                           // struct and not TEXT response
-
-    VECTOR response_text = response_to_text(res);
-
-    for (int m = 0; m < response_text.size; m++) {
-      printf("%c", *((char *)response_text.at(&response_text, m)));
-    }
-
-    char *response_buffer = vector_to_buffer(response_text);
-    ssize_t write_result =
-        write(client_fd, response_buffer, response_text.size);
-    if (write_result < 0) {
-      perror("Write failed");
-    }
-
-    // Freeing raw request buffer
-    request.free_mem(&request);
-
-    // Freeing REQUEST req struct and realated heap memory
-    free_request(&req); // This function is causing segfault
-    // Freeing RESPONSE res struct and realated heap memory
-    free_response(&res);
-
-    // Freeing response_text buffer, which haves response as text
-    response_text.free_mem(&response_text);
-    free(response_buffer);
-
-    int shut = shutdown(client_fd, SHUT_RDWR);
-    fflush(stdout);
-    close(client_fd);
   }
   shutdown(tcp_socket, SHUT_RDWR);
   close(tcp_socket);

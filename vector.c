@@ -22,7 +22,11 @@ void push(struct vector *v, void *data) {
   v->size++;
 }
 
-void free_mem(struct vector *v) { free(v->data); }
+void free_mem(struct vector *v) {
+  printf("FREEING VECTOR %p\n", (void *)v);
+  printf("FREEING DATA   %p\n", v->data);
+  free(v->data);
+}
 
 struct vector create_void_vector() {
   struct vector v;

@@ -11,8 +11,8 @@
 #define RESPONSE struct response
 
 struct header_pair {
-  struct vector *key;
-  struct vector *value;
+  struct vector key;
+  struct vector value;
 };
 
 struct body_struct {
