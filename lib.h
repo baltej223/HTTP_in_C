@@ -1,3 +1,6 @@
+#ifndef LIB_H
+#define LIB_H
+
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -62,3 +65,5 @@ struct Server Create_Server();
 void whatever(SERVER *s, VECTOR *res);
 VECTOR what_to_return_to_client(SERVER *s, struct request *req);
 
+
+#endif /* LIB_H */
