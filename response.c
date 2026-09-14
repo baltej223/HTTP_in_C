@@ -2,11 +2,12 @@
 #include "def.h"
 #include "utils.h"
 #include "vector.h"
+#include "lib.h"
 #include <stdlib.h>
 #include <sys/types.h>
 
-struct response
-generate_response(struct request req) /* 2nd argument should be some other
+struct response generate_response(struct request req, struct Server *s)
+            /* 2nd argument should be some other
            struct which is going to tell if the path is defined, and if yes,
            then what to return for this path*/
 {
@@ -34,7 +35,7 @@ generate_response(struct request req) /* 2nd argument should be some other
   }
 
   // setting the content_length
-  struct body_struct body = generate_body(req);
+  struct body_struct body = generate_body(req, s);
   res.content_length = body.body_length;
 
   // Setting the content_type
@@ -54,22 +55,22 @@ generate_response(struct request req) /* 2nd argument should be some other
 }
 
 struct body_struct generate_body(
-    struct request req) /* 2nd argument should be some other struct which is
+    struct request req,
+    struct Server *s
+)
+/* 2nd argument should be some other struct which is
                            going to tell if the path is defined, and if yes,
                            then what to return for this path*/
 {
-  VECTOR data = create_string_vector();
-  char *string = "This is the data to be sent back to the client!";
-  int str_len = strlen(string);
-  data.push_string(&data, string, str_len);
-
-  struct body_struct body = create_body_struct_from_vector(data);
-  VECTOR *content_t = malloc(sizeof(VECTOR));
-  *content_t = create_string_vector();
-  content_t->push_string(content_t, "text/plain", 10);
-  body.content_type = content_t;
-
-  return body;
+    VECTOR data = create_string_vector();
+    VECTOR to_append = what_to_return_to_client(s, &req);
+    append_vector_to_vector(&data, &to_append);
+    struct body_struct body = create_body_struct_from_vector(data);
+    VECTOR *content_t = malloc(sizeof(VECTOR));
+    *content_t = create_string_vector();
+    content_t->push_string(content_t, "text/plain", 10);
+    body.content_type = content_t;
+    return body;
 }
 
 struct vector response_to_text(struct response res) {

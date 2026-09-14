@@ -1,6 +1,6 @@
 CC=gcc
 
-C_FILES=main.c parser.c vector.c header.c response.c utils.c
+C_FILES=main.c lib.c parser.c vector.c header.c response.c utils.c
 C_OUTPUT=output
 
 JS_DIR=./benchmark/js
